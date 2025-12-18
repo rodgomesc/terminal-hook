@@ -2,7 +2,7 @@
   "name": "terminal-hook",
   "displayName": "Terminal Hook",
   "description": "MCP server that captures and exposes terminal output for AI assistants",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "rodgomesc",
     "email": "rodgomesc@gmail.com"
