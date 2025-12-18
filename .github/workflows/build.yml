@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -26,19 +27,52 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Bump patch version
+        id: bump_version
+        run: |
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          
+          # Get the latest tag version (if any)
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          LATEST_TAG_VERSION=${LATEST_TAG#v}
+          
+          # Parse version components
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          # If current version tag already exists, bump patch
+          if git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
+            PATCH=$((PATCH + 1))
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+            
+            # Update package.json with new version
+            node -e "
+              const fs = require('fs');
+              const pkg = require('./package.json');
+              pkg.version = '$NEW_VERSION';
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            "
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "bumped=true" >> $GITHUB_OUTPUT
+          else
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "bumped=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Compile TypeScript
         run: bun run compile
 
       - name: Package VSIX
         run: bun run package
 
-      - name: Get package version
-        id: package_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Generate release tag
-        id: tag
-        run: echo "tag=v${{ steps.package_version.outputs.version }}" >> $GITHUB_OUTPUT
+      - name: Commit version bump
+        if: steps.bump_version.outputs.bumped == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.bump_version.outputs.version }}"
+          git push
 
       - name: Get commit history
         id: changelog
@@ -53,8 +87,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ steps.tag.outputs.tag }}
+          tag_name: v${{ steps.bump_version.outputs.version }}
+          name: v${{ steps.bump_version.outputs.version }}
           body: |
             ${{ steps.changelog.outputs.changelog }}
 
