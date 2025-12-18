@@ -9,8 +9,11 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 !out/**/*.js
+!out/**/*.cjs
 node_modules/**
 coverage/**
 **/*.test.ts
 **/*.spec.ts
 jest.config.js
+mcp-server.mjs
+bun.lock

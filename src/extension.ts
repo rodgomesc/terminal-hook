@@ -136,7 +136,7 @@ export function deactivate() {
 
 async function registerMCPConfig(context: vscode.ExtensionContext) {
   const mcpConfigPath = path.join(os.homedir(), '.cursor', 'mcp.json');
-  const mcpServerPath = path.join(context.extensionPath, 'mcp-server.mjs');
+  const mcpServerPath = path.join(context.extensionPath, 'out', 'mcp-server.cjs');
   
   try {
     let config: Record<string, any> = {};
