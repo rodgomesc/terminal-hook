@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import * as net from 'net';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import { TerminalBufferService } from './services/TerminalBufferService';
 import { MCPServer } from './services/MCPServer';
 
@@ -14,6 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
   terminalService.initialize(context);
   mcpServer = new MCPServer(terminalService);
   startMCPServer(context);
+  registerMCPConfig(context);
   context.subscriptions.push(
     vscode.commands.registerCommand('terminal-hook.getTerminalOutput', async () => {
       const terminals = terminalService.getAllTerminals();
@@ -127,5 +131,49 @@ function startMCPServer(context: vscode.ExtensionContext) {
 export function deactivate() {
   if (server) {
     server.close();
+  }
+}
+
+async function registerMCPConfig(context: vscode.ExtensionContext) {
+  const mcpConfigPath = path.join(os.homedir(), '.cursor', 'mcp.json');
+  const mcpServerPath = path.join(context.extensionPath, 'mcp-server.mjs');
+  
+  try {
+    let config: Record<string, any> = {};
+    
+    if (fs.existsSync(mcpConfigPath)) {
+      const content = fs.readFileSync(mcpConfigPath, 'utf-8');
+      config = JSON.parse(content);
+    }
+    
+    const mcpServers: Record<string, any> = config.mcpServers || {};
+    const existing = mcpServers['terminal-hook'];
+    
+    if (existing?.args?.[0] === mcpServerPath) {
+      console.log('MCP config already up to date');
+      return;
+    }
+    
+    mcpServers['terminal-hook'] = {
+      command: 'node',
+      args: [mcpServerPath]
+    };
+    config.mcpServers = mcpServers;
+    
+    const cursorDir = path.dirname(mcpConfigPath);
+    if (!fs.existsSync(cursorDir)) {
+      fs.mkdirSync(cursorDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(mcpConfigPath, JSON.stringify(config, null, 2));
+    
+    if (existing) {
+      vscode.window.showInformationMessage('Terminal Hook: MCP config updated (path changed)');
+    } else {
+      vscode.window.showInformationMessage('Terminal Hook: MCP server registered in ~/.cursor/mcp.json');
+    }
+  } catch (error: any) {
+    console.error('Failed to register MCP config:', error);
+    vscode.window.showWarningMessage(`Terminal Hook: Could not auto-register MCP config: ${error.message}`);
   }
 }

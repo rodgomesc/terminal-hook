@@ -39,20 +39,9 @@ cursor --enable-proposed-api rodgomesc.terminal-hook
 alias cursor='cursor --enable-proposed-api rodgomesc.terminal-hook'
 ```
 
-### 4. Configure MCP Client
+### 4. Restart Cursor
 
-Add to `~/.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "terminal-hook": {
-      "command": "node",
-      "args": ["/absolute/path/to/terminal-hook/mcp-server.mjs"]
-    }
-  }
-}
-```
+The extension **automatically registers** itself in `~/.cursor/mcp.json` on first activation. Just restart Cursor to pick up the MCP config.
 
 ### 5. Test
 
@@ -60,15 +49,7 @@ Add to `~/.cursor/mcp.json`:
 2. Run some commands
 3. Ask Claude: "What's in my terminal?"
 
-## How It Works
-
-```
-┌─────────────────┐     stdio      ┌─────────────────┐     TCP      ┌─────────────────┐
-│  Cursor/Claude  │◄──────────────►│  mcp-server.mjs │◄────────────►│ VSCode Extension│
-│   (MCP Client)  │                │  (MCP Server)   │   port 9876  │ (Terminal Data) │
-└─────────────────┘                └─────────────────┘              └─────────────────┘
-```
-
+## Troubleshooting
 
 ### MCP can't connect
 
