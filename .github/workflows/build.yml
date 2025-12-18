@@ -38,7 +38,7 @@ jobs:
 
       - name: Generate release tag
         id: tag
-        run: echo "tag=v${{ steps.package_version.outputs.version }}-build.${{ github.run_number }}" >> $GITHUB_OUTPUT
+        run: echo "tag=v${{ steps.package_version.outputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Get commit history
         id: changelog
@@ -54,7 +54,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: Terminal Hook ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
           body: |
             ${{ steps.changelog.outputs.changelog }}
 
