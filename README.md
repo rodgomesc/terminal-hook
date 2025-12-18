@@ -2,6 +2,23 @@
 
 A VSCode/Cursor extension that captures terminal output in real-time and exposes it via MCP (Model Context Protocol) for AI assistants.
 
+## Why another extension?
+
+copy-pasting terminal output and manually referencing it in every chat is so meehhh. When AI assistants can proactively read your terminal — checking errors, logs, and command output without you having to break the execution to ask for more info, this extension solves that! Other MCP tools can also tap into terminal data for automation
+
+## How It Works
+
+```
+┌─────────────────┐     stdio      ┌─────────────────┐     TCP      ┌─────────────────┐
+│  Cursor/Claude  │◄──────────────►│  mcp-server.mjs │◄────────────►│ VSCode Extension│
+│   (MCP Client)  │                │  (MCP Server)   │   port 9876  │ (Terminal Data) │
+└─────────────────┘                └─────────────────┘              └─────────────────┘
+```
+
+1. **VSCode Extension** captures terminal output via `onDidWriteTerminalData` API
+2. **MCP Server** (`mcp-server.mjs`) communicates with Cursor via stdio
+3. **TCP Bridge** connects the MCP server to the extension on port 9876
+
 ## Features
 
 - **Real-time Capture** - Captures all terminal output as it happens
@@ -10,48 +27,7 @@ A VSCode/Cursor extension that captures terminal output in real-time and exposes
 
 ## Installation
 
-### 1. Build & Install
-
-```bash
-bun install
-bun run compile
-bun run package
-```
-
-Install the generated `.vsix` file via Command Palette → "Extensions: Install from VSIX"
-
-### 2. Launch with Proposed API
-
-This extension requires a proposed API for real-time capture. Launch with:
-
-```bash
-# Cursor
-cursor --enable-proposed-api rodgomesc.terminal-hook
-
-# VSCode
-code --enable-proposed-api rodgomesc.terminal-hook
-```
-
-**Tip:** Add an alias to your shell config:
-
-```bash
-alias cursor='cursor --enable-proposed-api rodgomesc.terminal-hook'
-```
-
-### 3. Configure MCP Client
-
-Add to your MCP config (`~/.cursor/mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "terminal-hook": {
-      "command": "node",
-      "args": ["/path/to/terminal-hook/mcp-server.mjs"]
-    }
-  }
-}
-```
+See [INSTALL.md](./INSTALL.md) for setup instructions.
 
 ## MCP Tools
 
@@ -91,26 +67,6 @@ Get output from a specific terminal.
   "lines_returned": 50
 }
 ```
-
-## Troubleshooting
-
-### No output captured
-
-Make sure you launched with the proposed API flag:
-
-```bash
-cursor --enable-proposed-api rodgomesc.terminal-hook
-```
-
-Check Output panel (View → Output → Terminal Hook) for:
-- `"Using onDidWriteTerminalData"` = ✅ Working
-- `"onDidWriteTerminalData not available"` = ❌ Need the flag
-
-### Connection refused
-
-The extension runs a TCP server on port 9876. Make sure:
-1. VSCode/Cursor is open with the extension active
-2. No firewall blocking localhost:9876
 
 ## Development
 
